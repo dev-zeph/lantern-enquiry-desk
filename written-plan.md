@@ -1,7 +1,7 @@
 # Lantern enquiry desk: written plan
 
 ## Whose account
-Google account behind info@. Kevin installs it and approves the permission screen. Staff get access to the Sheet, never a password. If Kevin won't allow that, he forwards info@ to a desk-only Gmail account, so the desk sees only what's forwarded. This week it ran on a test account with made-up customers.
+Google account behind info@. Kevin installs it and approves the permission screen. Staff get access to the Sheet, never a password. If Kevin won't allow that, he forwards info@ to a desk-only Gmail account, so the desk sees only what's forwarded. This week it ran on a test Google account with made-up customers. Two exceptions: the Claude key was my own, and Rob's address was my personal Gmail, because I couldn't create another test account.
 
 ## Busiest-month cost
 About 25 enquiries a week this fall. I allow 150 messages a month to be safe. Google Sheets, Forms, Gmail and Apps Script are $0.

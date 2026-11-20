@@ -57,3 +57,17 @@ Rules alone missed tricky messages, so AI now sorts every enquiry and Lantern's 
 
 Viability: 1 h
 Shared the list with Volta as a viewer and posted the form link and inbox with no password. I fixed the settings so the alarm goes to a test address. The Claude API isn't free, so the plan has to show the cost for the busiest month against Gemini's free tier and rules only. Next: Kevin's one-page note, which has to say that message text is sent to the AI to be sorted.
+
+## Friday Nov 20 (2 hours)
+
+Value: 0.5 h
+Ran the demo with Rishabh. All five of his test enquiries were on the list with replies, and he agreed the root cause was ownership, not ads. Next: post the final comment once the overnight score arrives.
+
+Usability: 0.5 h
+Wrote Carla's one-page guide, covering how to hand an enquiry on and how to change a reply. At the demo, Rob's first text call didn't land. A staff email with no call words and no phone number gets skipped quietly instead of reaching Carla. Next: send skipped staff emails to Needs you instead of dropping them.
+
+Feasibility: 0.5 h
+Ran a builder test and made a handwritten notepad image to test the photo path. In the demo, Rob's text call landed in about 3 to 4 minutes. Next: answer Rob's call emails faster by skipping the photo step when there's no image.
+
+Viability: 0.5 h
+Wrote the plan: whose account it runs on, the busiest-month cost (about $3 on Claude Opus 5.5, $0.08 on Haiku, $0 on Gemini or the rules), the alarm, Kevin's note and what it can't fix. This week used my own Claude key and my personal Gmail as Rob's address, which the plan now says. Next: move to Lantern's own account once Kevin approves.
