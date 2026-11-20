@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg:#f6f4ef; --card:#fff; --ink:#1d1d1b; --muted:#6b6862; --line:#e3dfd6; --accent:#b4531f; --ok:#2f6b3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { position:sticky; top:0; background:var(--bg); padding:14px 16px 8px; border-bottom:1px solid var(--line); z-index:1; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:13px; }
+  .tabs { display:flex; gap:6px; margin-top:10px; overflow-x:auto; }
+  .tabs button { border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 12px; font-size:14px; white-space:nowrap; }
+  .tabs button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  input[type=search] { width:100%; margin-top:8px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:15px; }
+  main { padding:12px 16px 40px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+  .name { font-weight:600; }
+  .when { color:var(--muted); font-size:13px; white-space:nowrap; }
+  .tags { margin:6px 0; display:flex; flex-wrap:wrap; gap:4px; }
+  .tag { font-size:12px; padding:2px 8px; border-radius:999px; background:#efece5; }
+  .tag.need { background:#fbe3d6; color:var(--accent); font-weight:600; }
+  .tag.ok { background:#e2efe4; color:var(--ok); }
+  .msg { font-size:14px; color:#3a3936; white-space:pre-wrap; max-height:4.2em; overflow:hidden; }
+  .card.open .msg { max-height:none; }
+  .contact { font-size:14px; margin-top:6px; }
+  .contact a { color:var(--accent); }
+  .step { font-size:14px; margin-top:8px; padding:6px 8px; background:#f3efe6; border-radius:8px; }
+  .step b { font-weight:600; }
+  .notes { font-size:13px; color:var(--muted); white-space:pre-wrap; margin-top:6px; }
+  .row { display:flex; gap:8px; margin-top:10px; }
+  select { flex:1; padding:8px; border:1px solid var(--line); border-radius:8px; font-size:15px; background:#fff; }
+  .actions { display:flex; gap:8px; margin-top:8px; }
+  .actions button { flex:1; padding:8px; border-radius:8px; border:1px solid var(--line); background:#fff; font-size:14px; }
+  .empty { text-align:center; color:var(--muted); padding:40px 0; }
+  .toast { position:fixed; left:16px; right:16px; bottom:16px; background:var(--ink); color:#fff; padding:10px 12px; border-radius:8px; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lantern enquiries</h1>
+  <div class="sub"><span id="sub">Loading…</span> · <a href="#" id="chk" onclick="checkNow();return false;">Check now</a></div>
+  <div class="tabs" id="tabs"></div>
+  <input type="search" id="q" placeholder="Search name, email, town">
+</header>
+<main id="list"><div class="empty">Loading…</div></main>
+<div class="toast" id="toast"></div>
+<script>
+  var data = { items: [], people: [], statuses: [] };
+  var tab = 'needs';
+  var TABS = [['needs','Needs you'],['new','New'],['open','Still open'],['all','All']];
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function ago(iso) {
+    if (!iso) return '';
+    var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 60) return m + ' min ago';
+    if (m < 1440) return Math.round(m / 60) + ' h ago';
+    return new Date(iso).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+  }
+  function toast(t) { var el = document.getElementById('toast'); el.textContent = t; el.style.display = 'block'; setTimeout(function(){ el.style.display = 'none'; }, 2200); }
+
+  function load() {
+    google.script.run.withSuccessHandler(function (d) { data = d; render(); })
+      .withFailureHandler(function (e) { document.getElementById('list').innerHTML = '<div class="empty">Could not load: ' + esc(e.message) + '</div>'; })
+      .apiList();
+  }
+
+  function filtered() {
+    var q = document.getElementById('q').value.toLowerCase();
+    return data.items.filter(function (it) {
+      if (q && (it.Name + ' ' + it.Email + ' ' + it.Town + ' ' + it.Message).toLowerCase().indexOf(q) < 0) return false;
+      if (tab === 'needs') return !!it['Needs you'];
+      if (tab === 'new') return it.Status === 'New';
+      if (tab === 'open') return ['Won','Lost','Not for us'].indexOf(it.Status) < 0;
+      return true;
+    });
+  }
+
+  function render() {
+    var needs = data.items.filter(function (i) { return i['Needs you']; }).length;
+    document.getElementById('sub').textContent = needs + ' need you · last checked ' + (data.lastRun ? ago(data.lastRun) : 'never');
+    document.getElementById('tabs').innerHTML = TABS.map(function (t) {
+      return '<button class="' + (t[0] === tab ? 'on' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>';
+    }).join('');
+    var items = filtered();
+    if (!items.length) { document.getElementById('list').innerHTML = '<div class="empty">Nothing here.</div>'; return; }
+    document.getElementById('list').innerHTML = items.map(card).join('');
+  }
+
+  function card(it) {
+    var opts = function (list, cur) { return list.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); };
+    var tags = '<span class="tag">' + esc(it.Type) + '</span><span class="tag">' + esc(it['Came in by']) + '</span>';
+    if (it['Needs you']) tags += '<span class="tag need">' + esc(it['Needs you'] === 'Yes' ? 'Needs you' : it['Needs you']) + '</span>';
+    if (it['Reply sent']) tags += '<span class="tag ok">Replied ' + esc(ago(it['Reply at'])) + '</span>';
+    if (it['Rebate file no']) tags += '<span class="tag">File ' + esc(it['Rebate file no']) + '</span>';
+    var contact = [];
+    if (it.Phone) contact.push('<a href="tel:' + esc(it.Phone) + '">' + esc(it.Phone) + '</a>');
+    if (it.Email) contact.push('<a href="mailto:' + esc(it.Email) + '">' + esc(it.Email) + '</a>');
+    if (it.Town) contact.push(esc(it.Town));
+    return '<div class="card" id="c-' + esc(it.ID) + '">' +
+      '<div class="top"><span class="name">' + esc(it.Name || it.Email || 'No name') + '</span><span class="when">' + esc(ago(it.Received)) + '</span></div>' +
+      '<div class="tags">' + tags + '</div>' +
+      '<div class="msg" onclick="this.parentNode.classList.toggle(\'open\')">' + esc(it.Message) + '</div>' +
+      '<div class="contact">' + contact.join(' · ') + '</div>' +
+      (it['Next step'] ? '<div class="step"><b>Next:</b> ' + esc(it['Next step']) + '</div>' : '') +
+      (it.Notes ? '<div class="notes">' + esc(it.Notes) + '</div>' : '') +
+      '<div class="row"><select onchange="upd(\'' + esc(it.ID) + '\',\'Owner\',this.value)">' + opts(data.people, it.Owner) + '</select>' +
+      '<select onchange="upd(\'' + esc(it.ID) + '\',\'Status\',this.value)">' + opts(data.statuses, it.Status) + '</select></div>' +
+      '<div class="actions">' +
+      (it['Needs you'] ? '<button onclick="upd(\'' + esc(it.ID) + '\',\'Needs you\',\'\')">Done, clear flag</button>' : '') +
+      '<button onclick="note(\'' + esc(it.ID) + '\')">Add note</button>' +
+      '<button onclick="step(\'' + esc(it.ID) + '\')">Change next step</button></div>' +
+      '</div>';
+  }
+
+  function checkNow() {
+    var a = document.getElementById('chk'); a.textContent = 'Checking…';
+    google.script.run.withSuccessHandler(function (d) { data = d; render(); a.textContent = 'Check now'; toast('Checked the form and inbox'); })
+      .withFailureHandler(function (e) { a.textContent = 'Check now'; toast('Could not check: ' + e.message); }).apiCheckNow();
+  }
+  function setTab(t) { tab = t; render(); }
+  function upd(id, field, value) {
+    google.script.run.withSuccessHandler(function () {
+      toast(field === 'Owner' ? 'Passed to ' + value + ', email sent' : 'Saved'); load();
+    }).withFailureHandler(function (e) { toast('Not saved: ' + e.message); }).apiUpdate(id, field, value);
+  }
+  function note(id) {
+    var t = window.prompt('Note');
+    if (t) upd(id, 'Notes', t);
+  }
+  function step(id) {
+    var t = window.prompt('Next step (who does what)');
+    if (t) upd(id, 'Next step', t);
+  }
+  document.getElementById('q').addEventListener('input', render);
+  load();
+  setInterval(load, 60000);
+</script>
+</body>
+</html>

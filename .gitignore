@@ -1,0 +1,9 @@
+# Lantern's materials stay private: interviews, data and brief
+transcripts/
+data/
+discovery/
+findings-*.md
+call-plan.md
+.DS_Store
+build/*.v*.gs
+build/*.v*.html
